@@ -33,25 +33,20 @@ function [ J_opt, u_opt_ind ] = ValueIteration( P, G )
 % put your code here
 [MN, ~, L] = size(P);
 
-k     = 0;
-J_k   = zeros(1, MN);
-J_kp1 = zeros(1, MN);
-
-% Outputs
-J_opt     = zeros(1, MN);
-u_opt_ind = zeros(1, MN);
+k = 0;
 
 % Initialisation
-J0  = 10; % Guess based on estimated total cost to reach target?
+J0  = 1; % Guess based on estimated total cost to reach target?
 J_k = J0 * ones(1, MN);
 
 % Termination criterion
-tolerance = 1e-4;
+tolerance = 1;
 
-while true
+while 1
+    k = k+1;
     % Do value calculation
     % min over u (control)
-    %   sum cost over all possible states
+    % sum cost over all possible states
     %
     % TEMP
     % P:               MN x MN x L
@@ -63,14 +58,10 @@ while true
         % J_candidates(u, :): 1  x MN
         % P(:, :, u):         MN x MN
         % J_k:                1  x MN
-        J_candidates(u, :) = sum(P(:, :, u) * J_k');
+        J_candidates(u, :) = J_k * P(:, :, u)';
     end
     J_candidates = J_candidates + G';
     [J_kp1, I] = min(J_candidates);
-
-    % Update for next iteration
-    J_k = J_kp1;
-    k = k+1
 
     % Termination
     % J_k ~ J_kp1 (within tolerance)
@@ -78,10 +69,14 @@ while true
     if norm(J_k - J_kp1, 2) <= tolerance
         J_opt     = J_k;
         u_opt_ind = I;
-
         break;
     end
+    
+    % Update for next iteration
+    J_k = J_kp1;
 end
+% J_opt     = J_k;
+% u_opt_ind = I;
 
 end
 

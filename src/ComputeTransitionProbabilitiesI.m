@@ -63,19 +63,18 @@ for k = 1:numStates
     pos = stateSpace(k,:);
 
     if isequal(pos, targetCell)
-        P(k, k, :) = zeros(numInput, 1);
+        P(k, k, :) = NaN * ones(numInput, 1);
+        P(k, k, 7) = 1;
+        continue;
     end
 
     for l = 1:numInput
         control = controlSpace(l,:);
         pos_new = pos + control;
 
-        % control input results in crossing the borders
-        if hitBorder(pos,control)
-            continue;
-        end
-        % control input results in hitting the wall
-        if hitWall(pos,control)
+        % control input results in crossing the borders or hitting a wall
+        if (hitBorder(pos,control) || hitWall(pos,control))
+            P(k,:,l) = NaN;
             continue;
         end
         % input not hitting the wall, check whether hit wall after all possible
@@ -101,7 +100,7 @@ for k = 1:numStates
     end
 
 end
-
+% check starting from one pos a move would lead to hitting a wall
 function h = hitWall(pos,move)
     % move = [0,0]
     if(move(1) == 0 && move(2) ==0)
@@ -141,7 +140,7 @@ function h = hitWall(pos,move)
                 wallStartToCheck = [wallStartToCheck;pos + [-1,0]];
                 wallEndToCheck = [wallEndToCheck;pos];
                 wallStartToCheck = [wallStartToCheck;pos + [-1,1]];
-                wallEndToCheck = [wallEndToCheck;pos + [1,1]];
+                wallEndToCheck = [wallEndToCheck;pos + [0,1]];
             case -1
                 wallStartToCheck = [wallStartToCheck;pos + [-1,-1]];
                 wallEndToCheck = [wallEndToCheck;pos + [0,-1]];
@@ -164,25 +163,25 @@ function h = hitWall(pos,move)
         elseif (isequal(move, [-1,1]))
             pointToCheck = pos + [-1,0];
         end
-        h = ~ismember(walls',pointToCheck,'rows');
+        h = (sum(ismember(walls',pointToCheck,'rows'))>0);
         return
     end
     % check whether elements in wallToCheck is in walls
     % convert to K*2 matrix
     for i = 1:size(wallStartToCheck,1)
         index = ismember(wallStarts,wallStartToCheck(i,:),'rows');
-        if isempty(find(index,1))
+        if sum(index) == 0
             continue;
         end
         found = ismember(wallEnds(index,:),wallEndToCheck(i,:),'rows');
-        if ~isempty(find(found,1))
+        if sum(found) > 0
             h = true;
             return;
         end
     end
     h = false;
 end
-
+% check starting from one pos a move would lead to going out of border
 function h = hitBorder(pos,move)
     pos = pos + move;
     if (pos(1)<1 ||pos(1)>width ||...

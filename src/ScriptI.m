@@ -20,14 +20,18 @@
 %
 
 %% clear workspace and command window
-clear all;
+s=dbstatus;
+save('myBreakpoints.mat', 's');
+clear all
+load('myBreakpoints.mat');
+dbstop(s);
 close all;
 clc;
 
 %% define problem size and generate maze
 shouldGenerateMaze = false;
 if shouldGenerateMaze
-	mazeSize = [ 10, 10 ];
+	mazeSize = [ 3, 3 ];
 	[ walls, targetCell, ~, ~ ] = GenerateMaze( mazeSize( 1 ), ...
         mazeSize( 2 ), false );
     % This generates a new random maze.
