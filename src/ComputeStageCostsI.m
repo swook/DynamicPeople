@@ -46,6 +46,16 @@ function G = ComputeStageCostsI( stateSpace, controlSpace, disturbanceSpace, maz
 %           control input l.
 
 % put your code here
+% TODO: Should depend on current state?
+% Could try distance-to-goal. Reduces while approaching goal
+% Should maybe have inf cost at walls/borders
+    G = repmat(                                     ...
+        (                                           ...
+            1 ./ sum(controlSpace.*controlSpace, 2) ...
+        )',                                         ... % 1 x L
+        size(stateSpace, 1),                        ... % MN
+        1                                           ...
+    );
 
 end
 

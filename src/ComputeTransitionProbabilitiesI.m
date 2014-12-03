@@ -61,9 +61,15 @@ wallEnds = wallEnds';
 P = zeros(numStates,numStates,numInput);
 for k = 1:numStates
     pos = stateSpace(k,:);
+
+    if isequal(pos, targetCell)
+        P(k, k, :) = zeros(numInput, 1);
+    end
+
     for l = 1:numInput
         control = controlSpace(l,:);
         pos_new = pos + control;
+
         % control input results in crossing the borders
         if hitBorder(pos,control)
             continue;
@@ -77,10 +83,12 @@ for k = 1:numStates
         for m = 1:size(disturbanceSpace,1)
             disturbance = disturbanceSpace(m,1:2);
             prob = disturbanceSpace(m,3);
+
             % if not hit wall after disturbance is applied
             if (~hitBorder(pos_new,disturbance) &&...
                     ~hitWall(pos_new,disturbance))
                 pos_disturbed = pos_new + disturbance;
+
                 nextState = (pos_disturbed(1)-1) * width + pos_disturbed(2);
                 P(k,nextState,l) = P(k,nextState,l)+ prob;
             else
@@ -93,6 +101,7 @@ for k = 1:numStates
     end
 
 end
+
 function h = hitWall(pos,move)
     % move = [0,0]
     if(move(1) == 0 && move(2) ==0)
@@ -146,13 +155,13 @@ function h = hitWall(pos,move)
         % diagonal move just need to check whether interested point is in
         % wall matrix
         pointToCheck = [];
-        if (move == [1,1])
+        if (isequal(move, [1,1]))
             pointToCheck = pos;
-        elseif (move == [1,-1])
+        elseif (isequal(move, [1,-1]))
             pointToCheck = pos + [0,-1];
-        elseif (move == [-1,-1])
+        elseif (isequal(move, [-1,-1]))
             pointToCheck = pos + [-1,-1];
-        elseif (move == [-1,1])
+        elseif (isequal(move, [-1,1]))
             pointToCheck = pos + [-1,0];
         end
         h = ~ismember(walls',pointToCheck,'rows');
