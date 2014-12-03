@@ -1,0 +1,53 @@
+Frequently Asked Questions
+
+--
+Dynamic Programming and Optimal Control
+Fall 2014
+Programming Exercise
+
+--
+ETH Zurich
+Institute for Dynamic Systems and Control
+Dario Brescianini
+bdario@ethz.ch
+
+--
+Revision history
+[24.11.2014, DB]	first version
+
+
+======================================================
+Hint 1: In your implementation of the file LinearProgramming.m,
+you should use the MATLAB function "linprog" to solve the linear
+program.
+======================================================
+
+======================================================
+Clarification 1: The ball position evolves as follows:
+First the control input u_k is applied, then the disturbance
+w_k is applied. If two cells are separated by a wall,
+the control space U(x_k) is adapted accordingly to only
+allow feasible movements, not taking the disturbance into
+account.
+======================================================
+
+======================================================
+Q1: Can we include additional functions into the given
+files (.m)?
+
+A1: You can add functions to the template files, but each
+file should be self-contained, i.e. not depend on any
+external non-standard function.
+======================================================
+
+======================================================
+Q2: Is it possible to move diagonal crossing a corner
+of a hole?
+
+A2: Yes. The ball falls into a hole if it is directly 
+on a hole cell, either after the control input u_k OR
+after the disturbance w_k has been applied. Hence a diagonal
+movement is possible without falling directly into a hole.
+======================================================
+
+
