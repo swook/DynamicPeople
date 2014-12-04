@@ -36,13 +36,13 @@ function [ J_opt, u_opt_ind ] = ValueIteration( P, G )
 k = 0;
 
 % Initialisation
-J0  = 1; % Guess based on estimated total cost to reach target?
+J0  = 0; % Guess based on estimated total cost to reach target?
 J_k = J0 * ones(1, MN);
 
 % Termination criterion
 tolerance = 1;
 
-while 1
+while k<1000
     k = k+1;
     % Do value calculation
     % min over u (control)
@@ -67,16 +67,14 @@ while 1
     % J_k ~ J_kp1 (within tolerance)
     % TODO: u_opt_ind
     if norm(J_k - J_kp1, 2) <= tolerance
-        J_opt     = J_k;
-        u_opt_ind = I;
         break;
     end
     
     % Update for next iteration
     J_k = J_kp1;
 end
-% J_opt     = J_k;
-% u_opt_ind = I;
+J_opt     = J_k;
+u_opt_ind = I;
 
 end
 

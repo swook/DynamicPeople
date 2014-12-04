@@ -62,8 +62,8 @@ P = zeros(numStates,numStates,numInput);
 for k = 1:numStates
     pos = stateSpace(k,:);
 
-    if isequal(pos, targetCell)
-        P(k, k, :) = NaN * ones(numInput, 1);
+    if isequal(pos, targetCell')
+        P(k, k, :) = zeros(numInput, 1);
         P(k, k, 7) = 1;
         continue;
     end
