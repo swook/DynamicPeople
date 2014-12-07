@@ -87,12 +87,12 @@ for k = 1:numStates
                     ~hitWall(pos_new,disturbance))
                 pos_disturbed = pos_new + disturbance;
 
-                nextState = (pos_disturbed(1)-1) * width + pos_disturbed(2);
+                nextState = (pos_disturbed(1)-1) * height + pos_disturbed(2);
                 P(k,nextState,l) = P(k,nextState,l)+ prob;
             else
                 % if hit wall after disturbance is applied, just increment
                 % prob at the state after control input is applied
-                nextState = (pos_new(1)-1) * width + pos_new(2);
+                nextState = (pos_new(1)-1) * height + pos_new(2);
                 P(k,nextState,l) = P(k,nextState,l)+ prob;
             end
         end
