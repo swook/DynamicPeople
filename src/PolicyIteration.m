@@ -31,6 +31,48 @@ function [ J_opt, u_opt_ind ] = PolicyIteration( P, G )
 %       	inputs for each element of the state space.
 
 % put your code here
-
+[MN,L] = size(G);
+% initial policy must be feasible, otherwise J_k = Inf/NaN, for all k
+u = 7 * ones(MN,1);
+% find target cell
+[target_ind,~] = find(G==0);
+iter_states = 1:MN;
+iter_states = iter_states( iter_states~=target_ind);
+% policy iteration
+while 1
+    % evaluate
+    % pij i,j?S\t must exclude termination state, otherwise singular
+    % matrix, cannot solve J
+    p = zeros(MN-1,MN-1);
+    g = zeros(MN-1,1);
+    for i = 1: numel(iter_states)
+        p(i,:) = P(iter_states(i),iter_states,u(iter_states(i)));
+        g(i) = G(iter_states(i),u(iter_states(i)));
+    end
+    % J(i)=g(i,?(i))+?pij(?(i))J(j) i?S\t (exclude target cell)
+    J_k = (eye(MN-1,MN-1) - p)\g;
+    % transpose J_k to reuse ValueIteration code
+    J_k = J_k';
+    % must consider termination stage in maximization stage
+    J_k(iter_states) = J_k;
+    J_k(target_ind) = 0;
+    % minimization stage
+    J_candidates = zeros(L, MN);
+    for l = 1:L
+        % J_candidates(u, :): 1  x MN
+        % P(:, :, u):         MN x MN
+        % J_k:                1  x MN
+        J_candidates(l, :) = J_k * P(:, :, l)';
+    end
+    J_candidates = J_candidates + G';
+    [J_kp1, u] = min(J_candidates);
+    % should break when J_kp1 == J_k, but due to numerical accuracy, this
+    % equation can not be reached
+    if (norm(J_kp1-J_k)<1e-2)
+        break;
+    end
 end
+J_opt = J_kp1;
+u_opt_ind = u;
+u_opt_ind(target_ind) = 0;
 

@@ -29,9 +29,9 @@ close all;
 clc;
 
 %% define problem size and generate maze
-shouldGenerateMaze = false;
+shouldGenerateMaze = true;
 if shouldGenerateMaze
-	mazeSize = [ 3, 3 ];
+	mazeSize = [ 2, 4 ];
 	[ walls, targetCell, ~, ~ ] = GenerateMaze( mazeSize( 1 ), ...
         mazeSize( 2 ), false );
     % This generates a new random maze.
@@ -79,6 +79,7 @@ P = ComputeTransitionProbabilitiesI( stateSpace, controlSpace, ...
 %% compute stage costs
 G = ComputeStageCostsI( stateSpace, controlSpace, disturbanceSpace, ...
     mazeSize, walls, targetCell );
+G
 % This computes the stage costs for all states in the state space for all
 % attainable control inputs.
 % The stage cost matrix has the dimension (MN x L), i.e. the entry G(i, l)
@@ -95,7 +96,7 @@ G = ComputeStageCostsI( stateSpace, controlSpace, disturbanceSpace, ...
 
 %% plot results
 figH = PlotMaze( 2, mazeSize, walls, targetCell, [], [], stateSpace, ...
-    controlSpace, J_opt_vi, u_opt_ind_vi );
+   controlSpace, J_opt_vi, u_opt_ind_vi );
 figure(figH);
 title(strcat('Value iteration (width=', num2str(mazeSize(1)), ', height=', num2str(mazeSize(2)), ')'));
 return;
@@ -104,6 +105,7 @@ figH = PlotMaze( 3, mazeSize, walls, targetCell, [], [], stateSpace, ...
     controlSpace, J_opt_pi, u_opt_ind_pi );
 figure(figH);
 title(strcat('Policy iteration (width=', num2str(mazeSize(1)), ', height=', num2str(mazeSize(2)), ')'));
+return;
 
 figH = PlotMaze( 4, mazeSize, walls, targetCell, [], [], stateSpace, ...
     controlSpace, J_opt_lp, u_opt_ind_lp );

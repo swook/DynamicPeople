@@ -40,7 +40,7 @@ J0  = 0; % Guess based on estimated total cost to reach target?
 J_k = J0 * ones(1, MN);
 
 % Termination criterion
-tolerance = 1;
+tolerance = 1e-2;
 
 while k<1000
     k = k+1;

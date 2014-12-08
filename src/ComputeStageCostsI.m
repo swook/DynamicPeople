@@ -145,7 +145,7 @@ function h = hitWall(pos,move)
             continue;
         end
         found = ismember(wallEnds(index,:),wallEndToCheck(i,:),'rows');
-        if sum(found)>1
+        if sum(found) > 0
             h = true;
             return;
         end
