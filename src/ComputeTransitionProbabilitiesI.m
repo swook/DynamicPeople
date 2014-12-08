@@ -74,7 +74,7 @@ for k = 1:numStates
 
         % control input results in crossing the borders or hitting a wall
         if (hitBorder(pos,control) || hitWall(pos,control))
-            continue;
+            pos_new=pos;
         end
         % input not hitting the wall, check whether hit wall after all possible
         % disturbance is applied
