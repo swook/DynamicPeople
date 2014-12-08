@@ -187,15 +187,32 @@ end
 
 % check starting from one pos a move would lead to falling into a hole
 function h = fallIntoHole(pos,move)
-	pos = pos + move;
-	for i=1:size(holes,2)
-		if isequal(pos',holes(:,i))
-			h=true;
-			return;
+	pos_n(1,:) = pos + move;
+	if (move(1)==0 && abs(move(2))==2) % double vertical move
+		switch move(2)
+			case 2 
+				pos_n(2,:) = pos + [0,1];
+			case -2
+				pos_n(2,:) = pos + [0,-1];
+		end
+	end
+	if (move(2)==0 && abs(move(1))==2) % double horizontal move
+		switch move(1)
+			case 2
+				pos_n(2,:) = pos + [1,0];
+			case -2
+				pos_n(2,:) = pos + [-1,0];
+		end
+	end
+	for p=1:size(pos_n,1)	
+		for i=1:size(holes,2)
+			if isequal(pos_n(p,:)',holes(:,i))
+				h=true;
+				return;
+			end
 		end
 	end
 	h=false;
 end
-
 end
 
