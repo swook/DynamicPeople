@@ -61,7 +61,8 @@ wallEnds = wallEnds';
 P = zeros(numStates,numStates,numInput);
 for k = 1:numStates
     pos = stateSpace(k,:);
-
+    
+    % if at target cell, stay at target cell
     if isequal(pos, targetCell')
         P(k, k, :) = zeros(numInput, 1);
         P(k, k, 7) = 1;
@@ -82,18 +83,19 @@ for k = 1:numStates
             disturbance = disturbanceSpace(m,1:2);
             prob = disturbanceSpace(m,3);
 
-            % if not hit wall after disturbance is applied
-            if (~hitBorder(pos_new,disturbance) &&...
-                    ~hitWall(pos_new,disturbance))
+            % if hit wall or border after disturbance is applied, just increment
+                % prob at the state after control input is applied
+            if (hitBorder(pos_new,disturbance) ||...
+                    hitWall(pos_new,disturbance))
+                nextState = (pos_new(1)-1) * height + pos_new(2);
+                P(k,nextState,l) = P(k,nextState,l)+ prob;
+            else
+                % if not hit a wall or border after disturbance is applied
                 pos_disturbed = pos_new + disturbance;
 
                 nextState = (pos_disturbed(1)-1) * height + pos_disturbed(2);
                 P(k,nextState,l) = P(k,nextState,l)+ prob;
-            else
-                % if hit wall after disturbance is applied, just increment
-                % prob at the state after control input is applied
-                nextState = (pos_new(1)-1) * height + pos_new(2);
-                P(k,nextState,l) = P(k,nextState,l)+ prob;
+                
             end
         end
     end
@@ -113,41 +115,33 @@ function h = hitWall(pos,move)
     if(move(2) == 0)
         switch move(1)
             case 1
-                wallStartToCheck = [wallStartToCheck;pos + [0,-1]];
-                wallEndToCheck = [wallEndToCheck;pos];
+                wallStartToCheck = pos + [0,-1];
+                wallEndToCheck = pos;
             case 2
-                wallStartToCheck = [wallStartToCheck;pos + [0,-1]];
-                wallEndToCheck = [wallEndToCheck;pos];
-                wallStartToCheck = [wallStartToCheck;pos + [1,-1]];
-                wallEndToCheck = [wallEndToCheck;pos + [1,0]];
+                wallStartToCheck = [pos + [0,-1];pos + [1,-1]];
+                wallEndToCheck = [pos;pos + [1,0]];
             case -1
-                wallStartToCheck = [wallStartToCheck;pos + [-1,-1]];
-                wallEndToCheck = [wallEndToCheck;pos + [-1,0]];
+                wallStartToCheck = pos + [-1,-1];
+                wallEndToCheck = pos + [-1,0];
             case -2
-                wallStartToCheck = [wallStartToCheck;pos + [-1,-1]];
-                wallEndToCheck = [wallEndToCheck;pos + [-1,0]];
-                wallStartToCheck = [wallStartToCheck;pos + [-2,-1]];
-                wallEndToCheck = [wallEndToCheck;pos + [-2,0]];
+                wallStartToCheck = [pos + [-1,-1];pos + [-2,-1]];
+                wallEndToCheck = [pos + [-1,0];pos + [-2,0]];
         end
     elseif(move(1)==0)
         % vertical move
         switch move(2)
             case 1
-                wallStartToCheck = [wallStartToCheck;pos + [-1,0]];
-                wallEndToCheck = [wallEndToCheck;pos];
+                wallStartToCheck = pos + [-1,0];
+                wallEndToCheck = pos;
             case 2
-                wallStartToCheck = [wallStartToCheck;pos + [-1,0]];
-                wallEndToCheck = [wallEndToCheck;pos];
-                wallStartToCheck = [wallStartToCheck;pos + [-1,1]];
-                wallEndToCheck = [wallEndToCheck;pos + [0,1]];
+                wallStartToCheck = [pos + [-1,0];pos + [-1,1]];
+                wallEndToCheck = [pos;pos + [0,1]];
             case -1
-                wallStartToCheck = [wallStartToCheck;pos + [-1,-1]];
-                wallEndToCheck = [wallEndToCheck;pos + [0,-1]];
+                wallStartToCheck = pos + [-1,-1];
+                wallEndToCheck = pos + [0,-1];
             case -2
-                wallStartToCheck = [wallStartToCheck;pos + [-1,-1]];
-                wallEndToCheck = [wallEndToCheck;pos + [0,-1]];
-                wallStartToCheck = [wallStartToCheck;pos + [-1,-2]];
-                wallEndToCheck = [wallEndToCheck;pos + [0,-2]];
+                wallStartToCheck = [pos + [-1,-1];pos + [-1,-2]];
+                wallEndToCheck = [pos + [0,-1];pos + [0,-2]];
         end
     else
         % diagonal move just need to check whether interested point is in
