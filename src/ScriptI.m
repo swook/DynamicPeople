@@ -29,7 +29,7 @@ close all;
 clc;
 
 %% define problem size and generate maze
-shouldGenerateMaze = true;
+shouldGenerateMaze = false;
 if shouldGenerateMaze
 	mazeSize = [ 2, 4 ];
 	[ walls, targetCell, ~, ~ ] = GenerateMaze( mazeSize( 1 ), ...
@@ -79,7 +79,6 @@ P = ComputeTransitionProbabilitiesI( stateSpace, controlSpace, ...
 %% compute stage costs
 G = ComputeStageCostsI( stateSpace, controlSpace, disturbanceSpace, ...
     mazeSize, walls, targetCell );
-G
 % This computes the stage costs for all states in the state space for all
 % attainable control inputs.
 % The stage cost matrix has the dimension (MN x L), i.e. the entry G(i, l)

@@ -73,45 +73,26 @@ wallStarts = walls(:,mod(1:numWalls*2,2)==1);
 wallEnds = walls(:,mod(1:numWalls*2,2)==0);
 wallStarts = wallStarts';
 wallEnds = wallEnds';
-D = size(disturbanceSpace,1);
-% G(k,l) = inf if l is infeasible at state k
-% G(k,l) = E{g(k,l,w)}
-% g(k,l,w) = 1 + c_p if w bounces into a wall
-% g(k,l,w) = 1 + c_r if ball fall into a hole
-% G(k,l) = 1 + c_r if ball fall into a hole after control input
+
+% (k,l) is inf if l is infeasible at state k
 % 1 penalty for each move (because we want to minimize moves)
 % 0 at target cell (so that we want to move to and stay at target cell)
 G = ones(MN,L);
-for k= 1:MN
+for k = 1:MN
     pos = stateSpace(k,:);
     for l = 1:L
-        move = controlSpace(l,:);
-        % g(k,l,w) = Inf if u leads directly to hitting a wall (infeasible
-        % move)
-        if (hitBorder(pos,move) || hitWall(pos,move))
-           G(k,l) = Inf;
-        % g(k,l,w) = 1 + c_r if ball fall into a hole
-        elseif fallInHoles(pos,move)
-            G(k,l)=G(k,l)+c_r;
-        % G(k,l) = E_w{g(k,l,w)}
-        else
-            kost = 0;
-            pos_new = pos + move;
-            for d= 1:D
-                disturbance = disturbanceSpace(d,1:2);
-                if (hitBorder(pos_new,disturbance)||hitWall(pos_new,disturbance))
-                    kost = kost + c_p * 0.2;
-                elseif fallInHoles(pos_new,disturbance)
-                    kost = kost + c_r * 0.2;
-                else
-                end
-            end
-            G(k,l) = kost + 1;
-        end
+       move = controlSpace(l,:);
+       % g(k,l,w) = 1 + c_p if w bounces into a wall
+       if (hitBorder(pos,move) || hitWall(pos,move))
+           G(k,l) = G(k,l)+c_p;
+       % g(k,l,w) = 1 + c_r if ball fall into a hole
+       elseif fallIntoHole(pos,move)
+			G(k,l)=G(k,l)+c_r;
+	   end
     end
-    % set target zero cost
     if isequal(pos,targetCell')
         G(k,7) = 0;
+        continue;
     end
 end
 % check starting from one pos a move would lead to hitting a wall
@@ -128,33 +109,41 @@ function h = hitWall(pos,move)
     if(move(2) == 0)
         switch move(1)
             case 1
-                wallStartToCheck = pos + [0,-1];
-                wallEndToCheck = pos;
+                wallStartToCheck = [wallStartToCheck;pos + [0,-1]];
+                wallEndToCheck = [wallEndToCheck;pos];
             case 2
-                wallStartToCheck = [pos + [0,-1];pos + [1,-1]];
-                wallEndToCheck = [pos;pos + [1,0]];
+                wallStartToCheck = [wallStartToCheck;pos + [0,-1]];
+                wallEndToCheck = [wallEndToCheck;pos];
+                wallStartToCheck = [wallStartToCheck;pos + [1,-1]];
+                wallEndToCheck = [wallEndToCheck;pos + [1,0]];
             case -1
-                wallStartToCheck = pos + [-1,-1];
-                wallEndToCheck = pos + [-1,0];
+                wallStartToCheck = [wallStartToCheck;pos + [-1,-1]];
+                wallEndToCheck = [wallEndToCheck;pos + [-1,0]];
             case -2
-                wallStartToCheck = [pos + [-1,-1];pos + [-2,-1]];
-                wallEndToCheck = [pos + [-1,0];pos + [-2,0]];
+                wallStartToCheck = [wallStartToCheck;pos + [-1,-1]];
+                wallEndToCheck = [wallEndToCheck;pos + [-1,0]];
+                wallStartToCheck = [wallStartToCheck;pos + [-2,-1]];
+                wallEndToCheck = [wallEndToCheck;pos + [-2,0]];
         end
     elseif(move(1)==0)
         % vertical move
         switch move(2)
             case 1
-                wallStartToCheck = pos + [-1,0];
-                wallEndToCheck = pos;
+                wallStartToCheck = [wallStartToCheck;pos + [-1,0]];
+                wallEndToCheck = [wallEndToCheck;pos];
             case 2
-                wallStartToCheck = [pos + [-1,0];pos + [-1,1]];
-                wallEndToCheck = [pos;pos + [0,1]];
+                wallStartToCheck = [wallStartToCheck;pos + [-1,0]];
+                wallEndToCheck = [wallEndToCheck;pos];
+                wallStartToCheck = [wallStartToCheck;pos + [-1,1]];
+                wallEndToCheck = [wallEndToCheck;pos + [0,1]];
             case -1
-                wallStartToCheck = pos + [-1,-1];
-                wallEndToCheck = pos + [0,-1];
+                wallStartToCheck = [wallStartToCheck;pos + [-1,-1]];
+                wallEndToCheck = [wallEndToCheck;pos + [0,-1]];
             case -2
-                wallStartToCheck = [pos + [-1,-1];pos + [-1,-2]];
-                wallEndToCheck = [pos + [0,-1];pos + [0,-2]];
+                wallStartToCheck = [wallStartToCheck;pos + [-1,-1]];
+                wallEndToCheck = [wallEndToCheck;pos + [0,-1]];
+                wallStartToCheck = [wallStartToCheck;pos + [-1,-2]];
+                wallEndToCheck = [wallEndToCheck;pos + [0,-2]];
         end
     else
         % diagonal move just need to check whether interested point is in
@@ -197,30 +186,35 @@ function h = hitBorder(pos,move)
     end
     h = false;
 end
-% check whether a move leads to falling into a hole
-function h = fallInHoles(pos,move)
-    if isequal(move,[2,0])
-        posToCheck = [pos + [1,0];pos + [2,0]];
-    elseif isequal(move,[-2,0])
-        posToCheck = [pos + [-1,0];pos + [-2,0]];
-    elseif isequal(move,[0,2])
-        posToCheck = [pos + [0,1];pos + [0,2]];
-    elseif isequal(move,[0,-2])
-        posToCheck = [pos + [0,-1];pos + [0,-2]];
-    else
-        posToCheck = pos + move;
-    end
 
-    % check whether elements in posToCheck is in holes
-    for i = 1:size(posToCheck,1)
-        index = ismember(holes',posToCheck(i,:),'rows');
-        if sum(index) > 0
-            h = true;
-            return;
-        end
-    end
-h = false;
+% check starting from one pos a move would lead to falling into a hole
+function h = fallIntoHole(pos,move)
+	pos_n(1,:) = pos + move;
+	if (move(1)==0 && abs(move(2))==2) % double vertical move
+		switch move(2)
+			case 2 
+				pos_n(2,:) = pos + [0,1];
+			case -2
+				pos_n(2,:) = pos + [0,-1];
+		end
+	end
+	if (move(2)==0 && abs(move(1))==2) % double horizontal move
+		switch move(1)
+			case 2
+				pos_n(2,:) = pos + [1,0];
+			case -2
+				pos_n(2,:) = pos + [-1,0];
+		end
+	end
+	for p=1:size(pos_n,1)	
+		for i=1:size(holes,2)
+			if isequal(pos_n(p,:)',holes(:,i))
+				h=true;
+				return;
+			end
+		end
+	end
+	h=false;
 end
-
 end
 

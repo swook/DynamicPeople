@@ -20,7 +20,11 @@
 %
 
 %% clear workspace and command window
-clear all;
+s=dbstatus;
+save('myBreakpoints.mat', 's');
+clear all
+load('myBreakpoints.mat');
+dbstop(s);
 close all;
 clc;
 
@@ -36,7 +40,7 @@ c_r = 3;
 %% define problem size and generate maze
 shouldGenerateMaze = false;
 if shouldGenerateMaze
-	mazeSize = [ 10, 10 ];
+	mazeSize = [ 3, 3 ];
 	[ walls, targetCell, holes, resetCell ] = GenerateMaze( mazeSize( 1 ), ...
         mazeSize( 2 ), true );
     % This generates a new random maze.
@@ -81,7 +85,6 @@ P = ComputeTransitionProbabilitiesII( stateSpace, controlSpace, ...
 % to state j if control input l is applied.
 % If a control input l is not feasible for a particular state i, the
 % transition  probabilities to all other states j can be set to zero.
-
 %% compute stage costs
 G = ComputeStageCostsII( stateSpace, controlSpace, disturbanceSpace, ...
     mazeSize, walls, targetCell, holes, resetCell, c_p, c_r );
@@ -91,10 +94,9 @@ G = ComputeStageCostsII( stateSpace, controlSpace, disturbanceSpace, ...
 % represents the cost if we are in state i and apply control input l.
 % If a control input l is not feasible for a particular state i, the stage
 % cost can be set to infinity.
-
 %% solve stochastic shortest path problem
 [ J_opt_vi, u_opt_ind_vi ] = ValueIteration( P, G );
-[ J_opt_pi, u_opt_ind_pi ] = PolicyIteration( P, G );
+%[ J_opt_pi, u_opt_ind_pi ] = PolicyIteration( P, G );
 %[ J_opt_lp, u_opt_ind_lp ] = LinearProgramming( P, G );
 % Here we solve the stochastic shortest path problem by Value Iteration,
 % Policy Iteration, and Linear Programming.
@@ -104,12 +106,13 @@ figH = PlotMaze( 2, mazeSize, walls, targetCell, holes, resetCell, stateSpace, .
     controlSpace, J_opt_vi, u_opt_ind_vi );
 figure(figH);
 title(strcat('Value iteration (width=', num2str(mazeSize(1)), ', height=', num2str(mazeSize(2)), ')'));
+return;
 
 figH = PlotMaze( 3, mazeSize, walls, targetCell, holes, resetCell, stateSpace, ...
     controlSpace, J_opt_pi, u_opt_ind_pi );
 figure(figH);
 title(strcat('Policy iteration (width=', num2str(mazeSize(1)), ', height=', num2str(mazeSize(2)), ')'));
-return
+
 figH = PlotMaze( 4, mazeSize, walls, targetCell, holes, resetCell, stateSpace, ...
     controlSpace, J_opt_lp, u_opt_ind_lp );
 figure(figH);

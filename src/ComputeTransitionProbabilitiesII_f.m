@@ -1,12 +1,12 @@
-function G = ComputeStageCostsII( stateSpace, controlSpace, disturbanceSpace, mazeSize, walls, targetCell, holes, resetCell, c_p, c_r )
-%COMPUTESTAGECOSTSII Compute stage costs.
-% 	Compute the stage costs for all states in the state space for all
-%   attainable control inputs.
+function P = ComputeTransitionProbabilitiesII( stateSpace, controlSpace, disturbanceSpace, mazeSize, walls, targetCell, holes, resetCell )
+%COMPUTETRANSITIONPROBABILITIESII Compute transition probabilities.
+% 	Compute the transition probabilities between all states in the state
+%   space for all attainable control inputs.
 %
-%   G = ComputeStageCostsII(stateSpace, controlSpace, disturbanceSpace,
-%   mazeSize, walls, targetCell, holes, resetCell, wallPenalty, holePenalty)
-%   computes the stage costs for all states in the state space for all
-%   attainable control inputs.
+%   P = ComputeTransitionProbabilitiesII(stateSpace, controlSpace,
+%   disturbanceSpace, mazeSize, walls, targetCell, holes, resetCell)
+%   computes the transition probabilities between all states in the state
+%   space for all attainable control inputs.
 %
 %   Input arguments:
 %
@@ -46,26 +46,19 @@ function G = ComputeStageCostsII( stateSpace, controlSpace, disturbanceSpace, ma
 %         	A (2 x 1) matrix describing the position of the reset cell in
 %           the maze.
 %
-%       c_p:
-%         	Penalty (in time steps) that we get every time the ball bounces
-%           into a wall.
-%
-%       c_r:
-%           Penalty (in time steps) that we get every time the ball falls
-%           into a hole.
-%
 %   Output arguments:
 %
-%       G:
-%           A (MN x L) matrix containing the stage costs of all states in
-%           the state space for all attainable control inputs. The entry
-%           G(i, l) represents the cost if we are in state i and apply
-%           control input l.
+%       P:
+%           A (MN x MN x L) matrix containing the transition probabilities
+%           between all states in the state space for all attainable
+%           control inputs. The entry P(i, j, l) represents the transition
+%           probability from state i to state j if control input l is
+%           applied.
 
 % put your code here
 
-MN = size(stateSpace, 1);                           
-L = size(controlSpace,1);
+numStates = size(stateSpace,1);
+numInput = size(controlSpace,1);
 width = mazeSize(1);
 height = mazeSize(2);
 numWalls = size(walls,2)/2;
@@ -73,46 +66,52 @@ wallStarts = walls(:,mod(1:numWalls*2,2)==1);
 wallEnds = walls(:,mod(1:numWalls*2,2)==0);
 wallStarts = wallStarts';
 wallEnds = wallEnds';
-D = size(disturbanceSpace,1);
-% G(k,l) = inf if l is infeasible at state k
-% G(k,l) = E{g(k,l,w)}
-% g(k,l,w) = 1 + c_p if w bounces into a wall
-% g(k,l,w) = 1 + c_r if ball fall into a hole
-% G(k,l) = 1 + c_r if ball fall into a hole after control input
-% 1 penalty for each move (because we want to minimize moves)
-% 0 at target cell (so that we want to move to and stay at target cell)
-G = ones(MN,L);
-for k= 1:MN
+P = zeros(numStates,numStates,numInput);
+for k = 1:numStates
     pos = stateSpace(k,:);
-    for l = 1:L
-        move = controlSpace(l,:);
-        % g(k,l,w) = Inf if u leads directly to hitting a wall (infeasible
-        % move)
-        if (hitBorder(pos,move) || hitWall(pos,move))
-           G(k,l) = Inf;
-        % g(k,l,w) = 1 + c_r if ball fall into a hole
-        elseif fallInHoles(pos,move)
-            G(k,l)=G(k,l)+c_r;
-        % G(k,l) = E_w{g(k,l,w)}
-        else
-            kost = 0;
-            pos_new = pos + move;
-            for d= 1:D
-                disturbance = disturbanceSpace(d,1:2);
-                if (hitBorder(pos_new,disturbance)||hitWall(pos_new,disturbance))
-                    kost = kost + c_p * 0.2;
-                elseif fallInHoles(pos_new,disturbance)
-                    kost = kost + c_r * 0.2;
-                else
-                end
+
+    if isequal(pos, targetCell')
+        P(k, k, :) = zeros(numInput, 1);
+        P(k, k, 7) = 1;
+        continue;
+    end
+
+    for l = 1:numInput
+        control = controlSpace(l,:);
+        pos_new = pos + control;
+
+        % control input results in crossing the borders or hitting a wall
+        if (hitBorder(pos,control) || hitWall(pos,control))
+			pos_new=pos;            
+        end
+		% control input results in falling into Hole
+		if fallIntoHole(pos,control)
+			pos_new = resetCell';
+		end
+        % input not hitting the wall, check whether hit wall after all possible
+        % disturbance is applied
+        for m = 1:size(disturbanceSpace,1)
+            disturbance = disturbanceSpace(m,1:2);
+            prob = disturbanceSpace(m,3);
+
+            % if not hit wall or falls after disturbance is applied
+            if (~hitBorder(pos_new,disturbance) &&...
+                    ~hitWall(pos_new,disturbance) )
+				if ~fallIntoHole(pos_new,disturbance)
+                	pos_disturbed = pos_new + disturbance;
+				else
+					pos_disturbed = resetCell;
+				end
+                nextState = (pos_disturbed(1)-1) * height + pos_disturbed(2);
+                P(k,nextState,l) = P(k,nextState,l)+ prob;
+            else
+                % if hit wall after disturbance is applied, the ball stays at its position 
+                nextState = (pos_new(1)-1) * height + pos_new(2);
+                P(k,nextState,l) = P(k,nextState,l)+ prob;
             end
-            G(k,l) = kost + 1;
         end
     end
-    % set target zero cost
-    if isequal(pos,targetCell')
-        G(k,7) = 0;
-    end
+
 end
 % check starting from one pos a move would lead to hitting a wall
 function h = hitWall(pos,move)
@@ -197,30 +196,35 @@ function h = hitBorder(pos,move)
     end
     h = false;
 end
-% check whether a move leads to falling into a hole
-function h = fallInHoles(pos,move)
-    if isequal(move,[2,0])
-        posToCheck = [pos + [1,0];pos + [2,0]];
-    elseif isequal(move,[-2,0])
-        posToCheck = [pos + [-1,0];pos + [-2,0]];
-    elseif isequal(move,[0,2])
-        posToCheck = [pos + [0,1];pos + [0,2]];
-    elseif isequal(move,[0,-2])
-        posToCheck = [pos + [0,-1];pos + [0,-2]];
-    else
-        posToCheck = pos + move;
-    end
-
-    % check whether elements in posToCheck is in holes
-    for i = 1:size(posToCheck,1)
-        index = ismember(holes',posToCheck(i,:),'rows');
-        if sum(index) > 0
-            h = true;
-            return;
-        end
-    end
-h = false;
+% check starting from one pos a move would lead to falling into a hole
+% if move is a double move in one direction, we need to make sure we are not jumping over a hole
+function h = fallIntoHole(pos,move)
+	pos_n(1,:) = pos + move;
+	if (move(1)==0 && abs(move(2))==2) % double vertical move
+		switch move(2)
+			case 2 
+				pos_n(2,:) = pos + [0,1];
+			case -2
+				pos_n(2,:) = pos + [0,-1];
+		end
+	end
+	if (move(2)==0 && abs(move(1))==2) % double horizontal move
+		switch move(1)
+			case 2
+				pos_n(2,:) = pos + [1,0];
+			case -2
+				pos_n(2,:) = pos + [-1,0];
+		end
+	end
+	for p=1:size(pos_n,1)	
+		for i=1:size(holes,2)
+			if isequal(pos_n(p,:)',holes(:,i))
+				h=true;
+				return;
+			end
+		end
+	end
+	h=false;
 end
-
 end
 

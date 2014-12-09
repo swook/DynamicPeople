@@ -42,7 +42,7 @@ J_k = J0 * ones(1, MN);
 % Termination criterion
 tolerance = 1e-2;
 
-while k<1000
+while 1
     k = k+1;
     % Do value calculation
     % min over u (control)
