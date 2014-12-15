@@ -32,6 +32,7 @@ function [ J_opt, u_opt_ind ] = PolicyIteration( P, G )
 
 % put your code here
 [MN,L] = size(G);
+% u: a MN x 1 matrix that stores the policies for at each state
 % initial policy must be feasible, otherwise J_k = Inf/NaN, for all k
 u = 7 * ones(MN,1);
 % find target cell
@@ -41,15 +42,17 @@ iter_states = iter_states( iter_states~=target_ind);
 % policy iteration
 while 1
     % evaluate
-    % pij i,j?S\t must exclude termination state, otherwise singular
+    % pij i,j in S\t must exclude termination state, otherwise singular
     % matrix, cannot solve J
     p = zeros(MN-1,MN-1);
     g = zeros(MN-1,1);
+    % p A (MN-1) x (MN -1) matrix P(i,j) := probability from state i to
+    % state j under an input control u
     for i = 1: numel(iter_states)
         p(i,:) = P(iter_states(i),iter_states,u(iter_states(i)));
         g(i) = G(iter_states(i),u(iter_states(i)));
     end
-    % J(i)=g(i,?(i))+?pij(?(i))J(j) i?S\t (exclude target cell)
+    % J(i)=g(i,u(i))+sum pij(u(i))J(j) i in S\t (exclude target cell)
     J_k = (eye(MN-1,MN-1) - p)\g;
     % transpose J_k to reuse ValueIteration code
     J_k = J_k';
