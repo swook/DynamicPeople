@@ -29,7 +29,7 @@ close all;
 clc;
 
 %% define problem size and generate maze
-shouldGenerateMaze = true;
+shouldGenerateMaze = false;
 if shouldGenerateMaze
 	mazeSize = [ 2, 4 ];
 	[ walls, targetCell, ~, ~ ] = GenerateMaze( mazeSize( 1 ), ...

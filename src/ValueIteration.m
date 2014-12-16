@@ -30,13 +30,13 @@ function [ J_opt, u_opt_ind ] = ValueIteration( P, G )
 %       	A (1 x MN) matrix containing the indices of the optimal control
 %       	inputs for each element of the state space.
 
-% put your code here
+% Get dimensions
 [MN, ~, L] = size(P);
 
 k = 0;
 
 % Initialisation
-J0  = 0; % Guess based on estimated total cost to reach target?
+J0  = 0; % Guess based on estimated total cost to reach target
 J_k = J0 * ones(1, MN);
 
 % Termination criterion
@@ -48,7 +48,6 @@ while 1
     % min over u (control)
     % sum cost over all possible states
     %
-    % TEMP
     % P:               MN x MN x L
     % G:               MN x L
     % J:               1 x MN
@@ -61,18 +60,21 @@ while 1
         J_candidates(u, :) = J_k * P(:, :, u)';
     end
     J_candidates = J_candidates + G';
+
+    % Find control input indices with lowest cost
     [J_kp1, I] = min(J_candidates);
 
     % Termination
     % J_k ~ J_kp1 (within tolerance)
-    % TODO: u_opt_ind
-    if norm(J_k - J_kp1, 2) <= tolerance
+    if norm(J_k - J_kp1, 2) < tolerance
         break;
     end
-    
+
     % Update for next iteration
     J_k = J_kp1;
 end
+
+% Assign result to return variables
 J_opt     = J_k;
 u_opt_ind = I;
 

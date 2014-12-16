@@ -47,141 +47,165 @@ function P = ComputeTransitionProbabilitiesI( stateSpace, controlSpace, disturba
 %           probability from state i to state j if control input l is
 %           applied.
 
-% put your code here
-
-numStates = size(stateSpace,1);
-numInput = size(controlSpace,1);
+% Get dimensions
+numStates = size(stateSpace, 1);
+numInput = size(controlSpace, 1);
 width = mazeSize(1);
 height = mazeSize(2);
-numWalls = size(walls,2)/2;
-wallStarts = walls(:,mod(1:numWalls*2,2)==1);
-wallEnds = walls(:,mod(1:numWalls*2,2)==0);
+numWalls = size(walls, 2)/2;
+
+wallStarts = walls(:, mod(1:numWalls*2, 2) == 1); % Wall start positions
+wallEnds = walls(:, mod(1:numWalls*2, 2) == 0);   % Wall end   positions
 wallStarts = wallStarts';
 wallEnds = wallEnds';
-P = zeros(numStates,numStates,numInput);
+
+% Initialise transition probabilities matrix P
+P = zeros(numStates, numStates, numInput);
+
 for k = 1:numStates
-    pos = stateSpace(k,:);
-    
-    % if at target cell, stay at target cell
+    % Get current position (state)
+    pos = stateSpace(k, :);
+
+    % If at target cell, stay at target cell
     if isequal(pos, targetCell')
         P(k, k, :) = zeros(numInput, 1);
         P(k, k, 7) = 1;
         continue;
     end
 
+    % For each control input possible
     for l = 1:numInput
-        control = controlSpace(l,:);
+        % Get control input
+        control = controlSpace(l, :);
+
+        % Calculate new position
         pos_new = pos + control;
 
-        % control input results in crossing the borders or hitting a wall
-        if (hitBorder(pos,control) || hitWall(pos,control))
+        % Control input results in crossing the borders or hitting a wall
+        if hitBorder(pos, control) || hitWall(pos, control)
             continue;
         end
-        % input not hitting the wall, check whether hit wall after all possible
-        % disturbance is applied
-        for m = 1:size(disturbanceSpace,1)
-            disturbance = disturbanceSpace(m,1:2);
-            prob = disturbanceSpace(m,3);
 
-            % if hit wall or border after disturbance is applied, just increment
-                % prob at the state after control input is applied
-            if (hitBorder(pos_new,disturbance) ||...
-                    hitWall(pos_new,disturbance))
+        % Input not hitting the wall, check whether hit wall after all possible
+        % disturbance is applied
+        for m = 1:size(disturbanceSpace, 1)
+            disturbance = disturbanceSpace(m, 1:2);
+            prob = disturbanceSpace(m, 3);
+
+            % If hit wall or border after disturbance is applied, just increment
+            % prob at the state after control input is applied
+            if hitBorder(pos_new, disturbance) || hitWall(pos_new, disturbance)
                 nextState = (pos_new(1)-1) * height + pos_new(2);
-                P(k,nextState,l) = P(k,nextState,l)+ prob;
+                P(k, nextState, l) = P(k, nextState, l) + prob;
             else
-                % if not hit a wall or border after disturbance is applied
+                % If not hit a wall or border after disturbance is applied
                 pos_disturbed = pos_new + disturbance;
 
                 nextState = (pos_disturbed(1)-1) * height + pos_disturbed(2);
-                P(k,nextState,l) = P(k,nextState,l)+ prob;
-                
+                P(k, nextState, l) = P(k, nextState, l) + prob;
+
             end
         end
     end
-
 end
-% check starting from one pos a move would lead to hitting a wall
-function h = hitWall(pos,move)
-    % move = [0,0]
-    if(move(1) == 0 && move(2) ==0)
+
+% Check starting from one pos a move would lead to hitting a wall
+function h = hitWall(pos, move)
+    % move = [0, 0]
+    if(move(1) == 0 && move(2) == 0)
         h = false;
         return
     end
+
     % K'*2 matrix storing relevant walls
     wallStartToCheck = [];
     wallEndToCheck = [];
-    % horizontal move
+
+    % Horizontal move
     if(move(2) == 0)
         switch move(1)
             case 1
-                wallStartToCheck = pos + [0,-1];
-                wallEndToCheck = pos;
+                wallStartToCheck = [wallStartToCheck;pos + [0, -1]];
+                wallEndToCheck = [wallEndToCheck;pos];
             case 2
-                wallStartToCheck = [pos + [0,-1];pos + [1,-1]];
-                wallEndToCheck = [pos;pos + [1,0]];
+                wallStartToCheck = [wallStartToCheck;pos + [0, -1]];
+                wallEndToCheck = [wallEndToCheck;pos];
+                wallStartToCheck = [wallStartToCheck;pos + [1, -1]];
+                wallEndToCheck = [wallEndToCheck;pos + [1, 0]];
             case -1
-                wallStartToCheck = pos + [-1,-1];
-                wallEndToCheck = pos + [-1,0];
+                wallStartToCheck = [wallStartToCheck;pos + [-1, -1]];
+                wallEndToCheck = [wallEndToCheck;pos + [-1, 0]];
             case -2
-                wallStartToCheck = [pos + [-1,-1];pos + [-2,-1]];
-                wallEndToCheck = [pos + [-1,0];pos + [-2,0]];
+                wallStartToCheck = [wallStartToCheck;pos + [-1, -1]];
+                wallEndToCheck = [wallEndToCheck;pos + [-1, 0]];
+                wallStartToCheck = [wallStartToCheck;pos + [-2, -1]];
+                wallEndToCheck = [wallEndToCheck;pos + [-2, 0]];
         end
     elseif(move(1)==0)
-        % vertical move
+        % Vertical move
         switch move(2)
             case 1
-                wallStartToCheck = pos + [-1,0];
-                wallEndToCheck = pos;
+                wallStartToCheck = [wallStartToCheck;pos + [-1, 0]];
+                wallEndToCheck = [wallEndToCheck;pos];
             case 2
-                wallStartToCheck = [pos + [-1,0];pos + [-1,1]];
-                wallEndToCheck = [pos;pos + [0,1]];
+                wallStartToCheck = [wallStartToCheck;pos + [-1, 0]];
+                wallEndToCheck = [wallEndToCheck;pos];
+                wallStartToCheck = [wallStartToCheck;pos + [-1, 1]];
+                wallEndToCheck = [wallEndToCheck;pos + [0, 1]];
             case -1
-                wallStartToCheck = pos + [-1,-1];
-                wallEndToCheck = pos + [0,-1];
+                wallStartToCheck = [wallStartToCheck;pos + [-1, -1]];
+                wallEndToCheck = [wallEndToCheck;pos + [0, -1]];
             case -2
-                wallStartToCheck = [pos + [-1,-1];pos + [-1,-2]];
-                wallEndToCheck = [pos + [0,-1];pos + [0,-2]];
+                wallStartToCheck = [wallStartToCheck;pos + [-1, -1]];
+                wallEndToCheck = [wallEndToCheck;pos + [0, -1]];
+                wallStartToCheck = [wallStartToCheck;pos + [-1, -2]];
+                wallEndToCheck = [wallEndToCheck;pos + [0, -2]];
         end
     else
-        % diagonal move just need to check whether interested point is in
+        % Diagonal move just need to check whether interested point is in
         % wall matrix
         pointToCheck = [];
-        if (isequal(move, [1,1]))
+        if (isequal(move, [1, 1]))
             pointToCheck = pos;
-        elseif (isequal(move, [1,-1]))
-            pointToCheck = pos + [0,-1];
-        elseif (isequal(move, [-1,-1]))
-            pointToCheck = pos + [-1,-1];
-        elseif (isequal(move, [-1,1]))
-            pointToCheck = pos + [-1,0];
+        elseif (isequal(move, [1, -1]))
+            pointToCheck = pos + [0, -1];
+        elseif (isequal(move, [-1, -1]))
+            pointToCheck = pos + [-1, -1];
+        elseif (isequal(move, [-1, 1]))
+            pointToCheck = pos + [-1, 0];
         end
-        h = (sum(ismember(walls',pointToCheck,'rows'))>0);
+        h = (sum(ismember(walls', pointToCheck, 'rows')) > 0);
         return
     end
-    % check whether elements in wallToCheck is in walls
+
+    % Check whether elements in wallToCheck is in walls
     % convert to K*2 matrix
-    for i = 1:size(wallStartToCheck,1)
-        index = ismember(wallStarts,wallStartToCheck(i,:),'rows');
+    for i = 1:size(wallStartToCheck, 1)
+        index = ismember(wallStarts, wallStartToCheck(i, :), 'rows');
         if sum(index) == 0
             continue;
         end
-        found = ismember(wallEnds(index,:),wallEndToCheck(i,:),'rows');
+        found = ismember(wallEnds(index, :), wallEndToCheck(i, :), 'rows');
         if sum(found) > 0
             h = true;
             return;
         end
     end
+
     h = false;
 end
-% check starting from one pos a move would lead to going out of border
-function h = hitBorder(pos,move)
+
+% Check starting from one pos a move would lead to going out of border
+function h = hitBorder(pos, move)
+    % Calculate position at end of move
     pos = pos + move;
-    if (pos(1)<1 ||pos(1)>width ||...
-                pos(2)<1||pos(2)>height)
-            h = true;
-            return
+
+    % If outside of maze, have hit border
+    if pos(1) < 1 || pos(1) > width || pos(2) < 1 || pos(2) > height
+        h = true;
+    else
+        h = false;
     end
-    h = false;
 end
+
 end
